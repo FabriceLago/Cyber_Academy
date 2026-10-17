@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Terminal, Mail, Cpu, Activity, Globe } from 'lucide-react';
+import { Terminal, Mail, Cpu, Activity, Globe, Radar } from 'lucide-react';
 import { TerminalLab } from './TerminalLab';
 import { PhishingLab } from './PhishingLab';
 import { NetworkPacketAnimation } from '../simulations/NetworkPacketAnimation';
 import { SiemLab } from './SiemLab';
 import { OwaspLab } from './OwaspLab';
+import { NmapScannerLab } from './NmapScannerLab';
 
 export const CyberLabView: React.FC = () => {
-  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem' | 'owasp'>('terminal');
+  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem' | 'owasp' | 'nmap'>('terminal');
 
   return (
     <div className="space-y-6">
@@ -81,6 +82,18 @@ export const CyberLabView: React.FC = () => {
             <Globe className="w-3.5 h-3.5" />
             <span>Bac à Sable OWASP (Web)</span>
           </button>
+
+          <button
+            onClick={() => setActiveLabTab('nmap')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeLabTab === 'nmap'
+                ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Radar className="w-3.5 h-3.5" />
+            <span>Scanner Réseau (Nmap)</span>
+          </button>
         </div>
       </div>
 
@@ -90,6 +103,7 @@ export const CyberLabView: React.FC = () => {
       {activeLabTab === 'network' && <NetworkPacketAnimation />}
       {activeLabTab === 'siem' && <SiemLab />}
       {activeLabTab === 'owasp' && <OwaspLab />}
+      {activeLabTab === 'nmap' && <NmapScannerLab />}
     </div>
   );
 };
