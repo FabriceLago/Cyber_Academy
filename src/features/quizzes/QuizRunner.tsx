@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, RotateCcw, Award, ChevronRight, AlertCircle } fr
 import { Quiz } from '../../core/types/cyber.types';
 import { StorageService } from '../../core/services/storageService';
 import { useProgress } from '../../shared/hooks/useProgress';
+import { AudioService } from '../../core/services/audioService';
 
 interface QuizRunnerProps {
   quiz: Quiz;
@@ -23,6 +24,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onFinish }) => {
   const handleSelectOption = (optionId: string) => {
     if (isAnswerSubmitted) return;
     setSelectedOptionId(optionId);
+    AudioService.playBlip();
   };
 
   const handleSubmitAnswer = () => {
@@ -32,6 +34,13 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ quiz, onFinish }) => {
       ...prev,
       [currentQuestion.id]: selectedOptionId
     }));
+
+    const chosen = currentQuestion.options.find((opt) => opt.id === selectedOptionId);
+    if (chosen?.isCorrect) {
+      AudioService.playSuccess();
+    } else {
+      AudioService.playAlert();
+    }
   };
 
   const handleNextQuestion = () => {

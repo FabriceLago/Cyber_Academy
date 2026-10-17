@@ -3,6 +3,7 @@ import { Mail, AlertTriangle, ShieldCheck, CheckCircle2, XCircle, Search, FileTe
 import { PHISHING_EMAILS } from '../../core/data/cyberData';
 import { StorageService } from '../../core/services/storageService';
 import { useProgress } from '../../shared/hooks/useProgress';
+import { AudioService } from '../../core/services/audioService';
 
 export const PhishingLab: React.FC = () => {
   const progress = useProgress();
@@ -30,7 +31,10 @@ export const PhishingLab: React.FC = () => {
     }));
 
     if (isSuccess) {
+      AudioService.playSuccess();
       StorageService.recordLabTaskComplete(`phish-${currentEmail.id}`, 'analyseMenaces');
+    } else {
+      AudioService.playAlert();
     }
   };
 

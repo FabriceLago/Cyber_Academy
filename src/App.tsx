@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Navbar, TabKey } from './shared/components/Navbar';
 import { Footer } from './shared/components/Footer';
+import { CyberBackground } from './shared/components/CyberBackground';
 import { SupabaseModal } from './shared/components/SupabaseModal';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { LearningPathsView } from './features/learning-paths/LearningPathsView';
@@ -34,7 +35,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 relative">
+      {/* Ambient Interactive Cyber Constellation Background */}
+      <CyberBackground />
+
       {/* Top Bar Navigation */}
       <Navbar
         currentTab={currentTab}
@@ -43,7 +47,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {currentTab === 'dashboard' && (
           <DashboardView
             onStartLesson={handleStartLesson}

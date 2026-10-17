@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, CheckCircle2, HelpCircle, ShieldAlert, Award, RotateCcw } from 'lucide-react';
+import { Terminal, CheckCircle2, HelpCircle, ShieldAlert, Award, RotateCcw, Monitor, Sparkles } from 'lucide-react';
 import { INITIAL_TERMINAL_VFS } from '../../core/data/cyberData';
 import { StorageService } from '../../core/services/storageService';
 import { useProgress } from '../../shared/hooks/useProgress';
+import { AudioService } from '../../core/services/audioService';
 
 interface HistoryItem {
   command: string;
@@ -23,6 +24,7 @@ export const TerminalLab: React.FC = () => {
   ]);
   const [cmdIndex, setCmdIndex] = useState<number>(-1);
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
+  const [isCrtMode, setIsCrtMode] = useState<boolean>(true);
   const terminalBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -283,6 +285,7 @@ export const TerminalLab: React.FC = () => {
     missions.forEach((m) => {
       if (!m.isCompleted && m.validate(rawCmd, nextCwd, nextVfs)) {
         StorageService.recordLabTaskComplete(m.id, 'terminal');
+        AudioService.playSuccess();
       }
     });
   };
@@ -363,17 +366,39 @@ export const TerminalLab: React.FC = () => {
         </div>
       </div>
 
-      {/* Terminal Screen Console */}
-      <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl font-mono text-xs">
+      {/* Terminal Screen Console with Immersive CRT mode */}
+      <div className="relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl font-mono text-xs">
+        {/* Subtle CRT Scanline Overlay */}
+        {isCrtMode && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-20 opacity-30 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px)'
+            }}
+          />
+        )}
+
         {/* Terminal Title Bar */}
-        <div className="bg-slate-900/90 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-slate-900/90 px-4 py-2 border-b border-slate-800 flex items-center justify-between relative z-30">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
             <span className="ml-2 text-slate-400 text-[11px]">apprenant@cyber-box: {cwd}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setIsCrtMode(!isCrtMode)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
+                isCrtMode ? 'text-cyan-400 bg-cyan-950/60 border border-cyan-800/60' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Activer/Désactiver l'effet écran cathodique"
+            >
+              <Monitor className="w-3 h-3" />
+              <span>CRT {isCrtMode ? 'ON' : 'OFF'}</span>
+            </button>
+
             <button
               onClick={() => {
                 setVfs(JSON.parse(JSON.stringify(INITIAL_TERMINAL_VFS)));
@@ -390,19 +415,19 @@ export const TerminalLab: React.FC = () => {
         </div>
 
         {/* Terminal Body */}
-        <div className="p-4 h-80 overflow-y-auto space-y-2 select-text">
+        <div className={`p-4 h-80 overflow-y-auto space-y-2 select-text relative z-10 ${isCrtMode ? 'text-cyan-200' : 'text-slate-300'}`}>
           {history.map((item, idx) => (
             <div key={idx} className="space-y-1">
               {item.command && (
                 <div className="flex items-center gap-2 text-slate-300">
                   <span className="text-cyan-400 font-semibold">apprenant@cyber-box:{cwd}$</span>
-                  <span className="text-white">{item.command}</span>
+                  <span className="text-white font-bold">{item.command}</span>
                 </div>
               )}
               {item.output && (
                 <pre
                   className={`whitespace-pre-wrap leading-relaxed ${
-                    item.isError ? 'text-rose-400' : 'text-slate-300'
+                    item.isError ? 'text-rose-400' : isCrtMode ? 'text-cyan-300/90 [text-shadow:0_0_8px_rgba(6,182,212,0.3)]' : 'text-slate-300'
                   }`}
                 >
                   {item.output}
@@ -413,13 +438,34 @@ export const TerminalLab: React.FC = () => {
           <div ref={terminalBottomRef} />
         </div>
 
+        {/* Quick Suggestion Chips */}
+        <div className="bg-slate-950 px-4 py-1.5 border-t border-slate-900 flex items-center gap-2 overflow-x-auto text-[11px] text-slate-500 relative z-30">
+          <span className="shrink-0 text-slate-400">Commandes rapides :</span>
+          {['pwd', 'ls -la', 'cd documents', 'cat readme.txt', 'chmod 600 config_exposee.env', 'cat /var/log/auth.log', 'help'].map((cmd) => (
+            <button
+              key={cmd}
+              type="button"
+              onClick={() => {
+                setInputVal(cmd);
+                AudioService.playKeypress();
+              }}
+              className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition-colors shrink-0"
+            >
+              {cmd}
+            </button>
+          ))}
+        </div>
+
         {/* Input prompt line */}
-        <form onSubmit={handleCommandSubmit} className="bg-slate-900/80 px-4 py-2.5 border-t border-slate-800 flex items-center gap-2">
+        <form onSubmit={handleCommandSubmit} className="bg-slate-900/80 px-4 py-2.5 border-t border-slate-800 flex items-center gap-2 relative z-30">
           <span className="text-cyan-400 font-semibold whitespace-nowrap">apprenant@cyber-box:{cwd}$</span>
           <input
             type="text"
             value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
+            onChange={(e) => {
+              setInputVal(e.target.value);
+              AudioService.playKeypress();
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Tapez une commande (ex: pwd, ls -la, help)..."
             className="flex-1 bg-transparent border-none text-white focus:outline-none focus:ring-0 text-xs font-mono"

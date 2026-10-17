@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, ChevronRight, ChevronLeft, ShieldCheck, ShieldAlert, Globe, Server, Laptop, Router } from 'lucide-react';
+import { AudioService } from '../../core/services/audioService';
 
 export type SimulationScenario = 'https-legit' | 'dns-resolution' | 'blocked-scan';
 
@@ -219,23 +220,35 @@ export const NetworkPacketAnimation: React.FC = () => {
     setScenario(newScenario);
     setCurrentStepIndex(0);
     setIsPlaying(false);
+    AudioService.playBlip();
   };
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+      const nextIdx = currentStepIndex + 1;
+      setCurrentStepIndex(nextIdx);
+      const nextStep = steps[nextIdx];
+      if (nextStep?.packetStatus === 'blocked') {
+        AudioService.playAlert();
+      } else if (nextStep?.packetStatus === 'approved') {
+        AudioService.playSuccess();
+      } else {
+        AudioService.playBlip();
+      }
     }
   };
 
   const handlePrev = () => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
+      AudioService.playBlip();
     }
   };
 
   const handleReset = () => {
     setCurrentStepIndex(0);
     setIsPlaying(false);
+    AudioService.playBlip();
   };
 
   // Node positioning

@@ -1,6 +1,7 @@
-import React from 'react';
-import { Shield, Flame, Award, Database, Terminal } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, Flame, Award, Database, Terminal, Volume2, VolumeX } from 'lucide-react';
 import { useProgress } from '../hooks/useProgress';
+import { AudioService } from '../../core/services/audioService';
 
 export type TabKey = 'dashboard' | 'paths' | 'lessons' | 'labs' | 'quizzes' | 'skills';
 
@@ -12,6 +13,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenSyncModal }) => {
   const progress = useProgress();
+  const [isMuted, setIsMuted] = useState<boolean>(AudioService.isMuted());
 
   const navLinks: { key: TabKey; label: string }[] = [
     { key: 'dashboard', label: 'Tableau de bord' },
@@ -63,8 +65,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenS
           })}
         </nav>
 
-        {/* Zone 3: XP, Level & Database / Sync action */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Zone 3: XP, Audio Toggle & Database / Sync action */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="hidden sm:flex items-center gap-3 text-xs text-slate-300 font-mono">
             <span className="flex items-center gap-1.5 text-amber-400">
               <Flame className="w-4 h-4" />
@@ -76,6 +78,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenS
               <span>{progress.xp} XP</span>
             </span>
           </div>
+
+          {/* Immersion Audio Sound Toggle */}
+          <button
+            onClick={() => {
+              const muted = AudioService.toggleMute();
+              setIsMuted(muted);
+            }}
+            title={isMuted ? 'Activer l\'ambiance sonore immersive' : 'Désactiver les sons'}
+            className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center ${
+              !isMuted
+                ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
+                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {!isMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
 
           <button
             onClick={onOpenSyncModal}
