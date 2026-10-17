@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import {
   Shield,
   BookOpen,
@@ -88,18 +89,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* 4 KPIs Cards Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Progression globale */}
+        {/* KPI 1: Progression globale avec animation fluide */}
         <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-medium">Progression MVP</span>
             <Target className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-2xl font-bold text-white tabular-nums font-mono">{completionPercentage}%</div>
-          <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-cyan-500 h-full rounded-full transition-all" style={{ width: `${completionPercentage}%` }} />
+          <motion.div
+            key={completionPercentage}
+            initial={{ scale: 1.12, color: '#22d3ee' }}
+            animate={{ scale: 1, color: '#ffffff' }}
+            transition={{ duration: 0.4 }}
+            className="text-2xl font-bold text-white tabular-nums font-mono"
+          >
+            {completionPercentage}%
+          </motion.div>
+          <div className="mt-2.5 w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/80 relative">
+            <motion.div
+              className="bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 h-full rounded-full relative"
+              initial={{ width: 0 }}
+              animate={{ width: `${completionPercentage}%` }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {completionPercentage > 0 && (
+                <span className="absolute right-0 top-0 bottom-0 w-2.5 bg-white/50 rounded-full blur-[1px] animate-pulse" />
+              )}
+            </motion.div>
           </div>
-          <div className="text-[11px] text-slate-500 mt-2 font-mono">
-            {completedLessonsCount} sur {totalLessons} leçons
+          <div className="text-[11px] text-slate-400 mt-2 font-mono flex items-center justify-between">
+            <span>{completedLessonsCount} sur {totalLessons} leçons</span>
+            <span className="text-cyan-400">{Math.round(completionPercentage)}% complété</span>
           </div>
         </div>
 
@@ -223,9 +242,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span className="text-slate-400 tabular-nums">{skill.value}%</span>
                   </div>
                   <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/60">
-                    <div
-                      className={`h-full rounded-full ${skill.color} transition-all duration-500`}
-                      style={{ width: `${skill.value}%` }}
+                    <motion.div
+                      className={`h-full rounded-full ${skill.color}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${skill.value}%` }}
+                      transition={{ duration: 0.8, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
                     />
                   </div>
                 </div>
