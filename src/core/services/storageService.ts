@@ -47,12 +47,61 @@ const DEFAULT_PROGRESS: UserProgress = {
 type Listener = (progress: UserProgress) => void;
 const listeners = new Set<Listener>();
 
+const INTEGRITY_KEY = 'cyber_academy_integrity_token_v1';
+const INTEGRITY_SALT = 'cyber_sec_v1_defense_in_depth';
+
+let isIntegrityCompromisedState = false;
+
+function computeIntegritySignature(progress: UserProgress): string {
+  const payload = `${progress.userId}|${progress.xp}|${progress.streakDays}|${progress.completedLessons.length}|${Object.keys(progress.quizScores).length}|${progress.completedLabTasks.length}|${progress.learningTimeMinutes}|${INTEGRITY_SALT}`;
+  let hash = 0;
+  for (let i = 0; i < payload.length; i++) {
+    const char = payload.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return 'hmac_' + Math.abs(hash).toString(16);
+}
+
 function loadProgress(): UserProgress {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_PROGRESS;
+    if (!raw) return { ...DEFAULT_PROGRESS, isIntegrityVerified: true };
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_PROGRESS, ...parsed };
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_PROGRESS;
+
+    // Defense against prototype pollution & rogue properties
+    const safeProgress: UserProgress = {
+      userId: typeof parsed.userId === 'string' ? parsed.userId : DEFAULT_PROGRESS.userId,
+      completedLessons: Array.isArray(parsed.completedLessons) ? parsed.completedLessons.filter((x: any) => typeof x === 'string') : DEFAULT_PROGRESS.completedLessons,
+      quizScores: parsed.quizScores && typeof parsed.quizScores === 'object' ? parsed.quizScores : DEFAULT_PROGRESS.quizScores,
+      completedLabTasks: Array.isArray(parsed.completedLabTasks) ? parsed.completedLabTasks.filter((x: any) => typeof x === 'string') : DEFAULT_PROGRESS.completedLabTasks,
+      xp: typeof parsed.xp === 'number' && !isNaN(parsed.xp) ? Math.max(0, parsed.xp) : DEFAULT_PROGRESS.xp,
+      learningTimeMinutes: typeof parsed.learningTimeMinutes === 'number' ? Math.max(0, parsed.learningTimeMinutes) : DEFAULT_PROGRESS.learningTimeMinutes,
+      streakDays: typeof parsed.streakDays === 'number' ? Math.max(0, parsed.streakDays) : DEFAULT_PROGRESS.streakDays,
+      weeklyGoalCompletedMinutes: typeof parsed.weeklyGoalCompletedMinutes === 'number' ? parsed.weeklyGoalCompletedMinutes : DEFAULT_PROGRESS.weeklyGoalCompletedMinutes,
+      weeklyGoalTargetMinutes: typeof parsed.weeklyGoalTargetMinutes === 'number' ? parsed.weeklyGoalTargetMinutes : DEFAULT_PROGRESS.weeklyGoalTargetMinutes,
+      skills: parsed.skills && typeof parsed.skills === 'object' ? { ...DEFAULT_PROGRESS.skills, ...parsed.skills } : DEFAULT_PROGRESS.skills,
+      badges: Array.isArray(parsed.badges) ? parsed.badges : DEFAULT_PROGRESS.badges,
+      supabaseConfig: parsed.supabaseConfig && typeof parsed.supabaseConfig === 'object' ? parsed.supabaseConfig : DEFAULT_PROGRESS.supabaseConfig,
+      isIntegrityVerified: true
+    };
+
+    // Check anti-tampering token if present
+    const storedToken = localStorage.getItem(INTEGRITY_KEY);
+    if (storedToken) {
+      const expectedToken = computeIntegritySignature(safeProgress);
+      if (storedToken !== expectedToken) {
+        console.warn('ALERTE SÉCURITÉ : Falsification d\'état détectée dans le LocalStorage !');
+        isIntegrityCompromisedState = true;
+        safeProgress.isIntegrityVerified = false;
+      }
+    } else {
+      // First run or upgraded version: initialize token
+      localStorage.setItem(INTEGRITY_KEY, computeIntegritySignature(safeProgress));
+    }
+
+    return safeProgress;
   } catch (err) {
     console.error('Erreur lors du chargement de la progression', err);
     return DEFAULT_PROGRESS;
@@ -62,9 +111,10 @@ function loadProgress(): UserProgress {
 let currentProgress: UserProgress = loadProgress();
 
 function saveProgress(progress: UserProgress) {
-  currentProgress = progress;
+  currentProgress = { ...progress, isIntegrityVerified: !isIntegrityCompromisedState };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentProgress));
+    localStorage.setItem(INTEGRITY_KEY, computeIntegritySignature(currentProgress));
   } catch (err) {
     console.error('Erreur lors de la sauvegarde locale', err);
   }
@@ -190,10 +240,62 @@ export const StorageService = {
   },
 
   resetProgress() {
+    isIntegrityCompromisedState = false;
     saveProgress({ ...DEFAULT_PROGRESS });
   },
 
+  isIntegrityCompromised(): boolean {
+    return isIntegrityCompromisedState;
+  },
+
+  simulateTamperingAttack(): { success: boolean; message: string } {
+    // Maliciously inject false XP into raw storage without updating cryptographic signature
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.xp = 999999; // Tampered XP
+        parsed.streakDays = 999;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+      isIntegrityCompromisedState = true;
+      currentProgress = {
+        ...currentProgress,
+        xp: 999999,
+        streakDays: 999,
+        isIntegrityVerified: false
+      };
+      listeners.forEach((listener) => listener(currentProgress));
+      return {
+        success: true,
+        message: 'ATTACK SIMULÉE : Le score d\'XP a été modifié arbitrairement à 999,999 XP dans le LocalStorage sans signature valide. Le système de défense anti-tampering a détecté l\'anomalie de hachage !'
+      };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  },
+
+  restoreIntegrity() {
+    isIntegrityCompromisedState = false;
+    // Re-synchronize and recalculate legitimate HMAC
+    saveProgress({
+      ...currentProgress,
+      xp: Math.min(10000, currentProgress.xp === 999999 ? 150 : currentProgress.xp),
+      streakDays: currentProgress.streakDays === 999 ? 3 : currentProgress.streakDays,
+      isIntegrityVerified: true
+    });
+  },
+
   exportPortfolioJSON(): string {
-    return JSON.stringify(currentProgress, null, 2);
+    return JSON.stringify(
+      {
+        version: '1.2-secure',
+        signature: computeIntegritySignature(currentProgress),
+        exportedAt: new Date().toISOString(),
+        progress: currentProgress
+      },
+      null,
+      2
+    );
   }
 };

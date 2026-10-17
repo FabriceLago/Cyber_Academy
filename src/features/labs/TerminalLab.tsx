@@ -71,23 +71,54 @@ export const TerminalLab: React.FC = () => {
     }
   ];
 
-  const normalizePath = (target: string, currentDir: string): string => {
-    if (target === '~' || target === '') return '/home/apprenant';
-    if (target.startsWith('/')) {
-      return target.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  const DANGEROUS_KEYS = new Set([
+    '__proto__',
+    'constructor',
+    'prototype',
+    'toString',
+    'valueOf',
+    '__defineGetter__',
+    '__defineSetter__',
+    'hasOwnProperty'
+  ]);
+
+  const normalizePath = (target: string, currentDir: string): { path: string; error?: string } => {
+    if (target === '~' || target === '') return { path: '/home/apprenant' };
+
+    // Strict prototype pollution prevention
+    if (DANGEROUS_KEYS.has(target.toLowerCase())) {
+      return {
+        path: '',
+        error: '🛡️ PARE-FEU APPLICATIF : Vecteur de Prototype Pollution neutralisé. Les propriétés d\'objet système sont strictement interdites.'
+      };
     }
-    const combined = `${currentDir}/${target}`;
-    const parts = combined.split('/').filter(Boolean);
+
+    let pathCandidate = target;
+    if (target.startsWith('/')) {
+      pathCandidate = target.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+    } else {
+      pathCandidate = `${currentDir}/${target}`;
+    }
+
+    const parts = pathCandidate.split('/').filter(Boolean);
     const stack: string[] = [];
     for (const part of parts) {
+      if (DANGEROUS_KEYS.has(part.toLowerCase())) {
+        return {
+          path: '',
+          error: '🛡️ PARE-FEU APPLICATIF : Segment de chemin malveillant (__proto__/constructor) détecté et rejeté.'
+        };
+      }
       if (part === '.') continue;
       if (part === '..') {
-        stack.pop();
+        if (stack.length > 0) {
+          stack.pop();
+        }
       } else {
         stack.push(part);
       }
     }
-    return '/' + stack.join('/');
+    return { path: '/' + stack.join('/') };
   };
 
   const handleCommandSubmit = (e: React.FormEvent) => {
@@ -112,6 +143,7 @@ export const TerminalLab: React.FC = () => {
   ls [-la]         : Liste les fichiers et dossiers
   cd <répertoire>  : Change de répertoire (ex: cd documents, cd ..)
   cat <fichier>    : Affiche le contenu d'un fichier texte
+  grep <motif> <f> : Recherche une chaîne de caractères dans un fichier
   touch <fichier>  : Crée un nouveau fichier vide
   mkdir <dossier>  : Crée un nouveau répertoire
   chmod <mode> <f> : Modifie les permissions (ex: chmod 600 config.env)
@@ -179,10 +211,15 @@ export const TerminalLab: React.FC = () => {
 
       case 'cd': {
         const target = args[0] || '~';
-        const resolved = normalizePath(target, cwd);
-        if (vfs[resolved] && vfs[resolved].type === 'dir') {
-          nextCwd = resolved;
-          setCwd(resolved);
+        const res = normalizePath(target, cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
+        if (vfs[res.path] && vfs[res.path].type === 'dir') {
+          nextCwd = res.path;
+          setCwd(res.path);
         } else {
           output = `cd: aucun fichier ou dossier de ce type : ${target}`;
           isError = true;
@@ -196,8 +233,18 @@ export const TerminalLab: React.FC = () => {
           isError = true;
           break;
         }
-        const resolved = normalizePath(args[0], cwd);
-        const item = vfs[resolved];
+        const res = normalizePath(args[0], cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
+        if (res.path === '/etc/shadow') {
+          output = 'cat: /etc/shadow: Permission non accordée (Seul l\'utilisateur root possède les droits d\'accès aux hashs cryptographiques des mots de passe. CWE-250 / Principe du moindre privilège).';
+          isError = true;
+          break;
+        }
+        const item = vfs[res.path];
         if (!item) {
           output = `cat: ${args[0]}: Aucun fichier ou dossier de ce type`;
           isError = true;
@@ -210,16 +257,52 @@ export const TerminalLab: React.FC = () => {
         break;
       }
 
+      case 'grep': {
+        if (args.length < 2) {
+          output = 'grep: utilisation : grep <motif> <fichier>';
+          isError = true;
+          break;
+        }
+        const pattern = args[0];
+        const targetFile = args[1];
+        const res = normalizePath(targetFile, cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
+        const item = vfs[res.path];
+        if (!item || item.type === 'dir') {
+          output = `grep: ${targetFile}: Aucun fichier de ce type`;
+          isError = true;
+        } else {
+          const lines = (item.content || '').split('\n');
+          const matched = lines.filter((l: string) => l.toLowerCase().includes(pattern.toLowerCase()));
+          output = matched.length > 0 ? matched.join('\n') : '';
+        }
+        break;
+      }
+
       case 'touch': {
         if (!args[0]) {
           output = 'touch: nom de fichier manquant';
           isError = true;
           break;
         }
-        const resolved = normalizePath(args[0], cwd);
-        nextVfs[resolved] = {
+        const res = normalizePath(args[0], cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
+        if (nextVfs[res.path] && nextVfs[res.path].type === 'dir') {
+          output = `touch: impossible de modifier '${args[0]}': est un répertoire existant`;
+          isError = true;
+          break;
+        }
+        nextVfs[res.path] = {
           type: 'file',
-          content: '',
+          content: nextVfs[res.path]?.content || '',
           permissions: 'rw-r--r--',
           owner: 'apprenant'
         };
@@ -233,8 +316,18 @@ export const TerminalLab: React.FC = () => {
           isError = true;
           break;
         }
-        const resolved = normalizePath(args[0], cwd);
-        nextVfs[resolved] = {
+        const res = normalizePath(args[0], cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
+        if (nextVfs[res.path]) {
+          output = `mkdir: impossible de créer le dossier '${args[0]}': Le fichier ou dossier existe déjà`;
+          isError = true;
+          break;
+        }
+        nextVfs[res.path] = {
           type: 'dir',
           permissions: 'rwxr-xr-x',
           owner: 'apprenant'
@@ -251,9 +344,14 @@ export const TerminalLab: React.FC = () => {
         }
         const mode = args[0];
         const targetFile = args[1];
-        const resolved = normalizePath(targetFile, cwd);
+        const res = normalizePath(targetFile, cwd);
+        if (res.error) {
+          output = res.error;
+          isError = true;
+          break;
+        }
 
-        if (!nextVfs[resolved]) {
+        if (!nextVfs[res.path]) {
           output = `chmod: impossible d'accéder à '${targetFile}': Aucun fichier ou dossier de ce type`;
           isError = true;
         } else {
@@ -264,8 +362,8 @@ export const TerminalLab: React.FC = () => {
           else if (mode === '700') convertedPerm = 'rwx------';
           else if (mode === '777') convertedPerm = 'rwxrwxrwx';
 
-          nextVfs[resolved] = {
-            ...nextVfs[resolved],
+          nextVfs[res.path] = {
+            ...nextVfs[res.path],
             permissions: convertedPerm
           };
           setVfs(nextVfs);

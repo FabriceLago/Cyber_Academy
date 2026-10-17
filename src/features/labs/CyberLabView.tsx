@@ -6,9 +6,11 @@ import { NetworkPacketAnimation } from '../simulations/NetworkPacketAnimation';
 import { SiemLab } from './SiemLab';
 import { OwaspLab } from './OwaspLab';
 import { NmapScannerLab } from './NmapScannerLab';
+import { HackerAuditView } from '../security/HackerAuditView';
+import { Bug } from 'lucide-react';
 
 export const CyberLabView: React.FC = () => {
-  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem' | 'owasp' | 'nmap'>('terminal');
+  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem' | 'owasp' | 'nmap' | 'audit'>('terminal');
 
   return (
     <div className="space-y-6">
@@ -94,6 +96,18 @@ export const CyberLabView: React.FC = () => {
             <Radar className="w-3.5 h-3.5" />
             <span>Scanner Réseau (Nmap)</span>
           </button>
+
+          <button
+            onClick={() => setActiveLabTab('audit')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeLabTab === 'audit'
+                ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                : 'text-cyan-400 hover:text-cyan-300'
+            }`}
+          >
+            <Bug className="w-3.5 h-3.5" />
+            <span>Audit & Pentest Hacker</span>
+          </button>
         </div>
       </div>
 
@@ -104,6 +118,7 @@ export const CyberLabView: React.FC = () => {
       {activeLabTab === 'siem' && <SiemLab />}
       {activeLabTab === 'owasp' && <OwaspLab />}
       {activeLabTab === 'nmap' && <NmapScannerLab />}
+      {activeLabTab === 'audit' && <HackerAuditView />}
     </div>
   );
 };

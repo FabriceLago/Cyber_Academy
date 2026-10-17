@@ -13,12 +13,64 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({ isOpen, onClose })
   const [url, setUrl] = useState<string>(progress.supabaseConfig?.url || '');
   const [anonKey, setAnonKey] = useState<string>(progress.supabaseConfig?.anonKey || '');
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [securityError, setSecurityError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  const validateSupabaseConfig = (inputUrl: string, inputKey: string): string | null => {
+    const trimmedUrl = inputUrl.trim();
+    const trimmedKey = inputKey.trim();
+
+    if (!trimmedUrl && !trimmedKey) return null; // Allowing empty to clear config
+
+    // Check URL scheme
+    if (trimmedUrl) {
+      if (!trimmedUrl.startsWith('https://')) {
+        return 'Vulnérabilité de transport : L\'URL doit impérativement utiliser le protocole HTTPS sécurisé (https://). Les protocoles non chiffrés ou pseudo-protocoles sont bloqués.';
+      }
+      try {
+        const parsed = new URL(trimmedUrl);
+        if (parsed.protocol !== 'https:') {
+          return 'Protocole non sécurisé détecté.';
+        }
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+          return 'Avertissement SSRF : L\'accès aux interfaces de bouclage local (localhost/127.0.0.1) est restreint.';
+        }
+      } catch {
+        return 'Format d\'URL invalide. Exemple attendu : https://votre-projet.supabase.co';
+      }
+    }
+
+    // Inspect JWT Key for critical Service Role leakage (CWE-200 / CWE-250)
+    if (trimmedKey) {
+      const parts = trimmedKey.split('.');
+      if (parts.length === 3) {
+        try {
+          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+          const decoded = JSON.parse(payloadJson);
+          if (decoded.role === 'service_role') {
+            return '🚨 VULNÉRABILITÉ CRITIQUE (CWE-200 / CWE-250) : Vous avez fourni une clé "service_role" ! Cette clé secrète outrepasse le Row Level Security (RLS) et confère les droits administrateur racine. Ne fournissez JAMAIS une clé service_role dans un navigateur client. Utilisez exclusivement la clé "anon" (publique).';
+          }
+        } catch {
+          // If not standard JWT format, continue
+        }
+      }
+    }
+
+    return null;
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    StorageService.setSupabaseConfig(url, anonKey);
+    setSecurityError(null);
+
+    const error = validateSupabaseConfig(url, anonKey);
+    if (error) {
+      setSecurityError(error);
+      return;
+    }
+
+    StorageService.setSupabaseConfig(url.trim(), anonKey.trim());
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
@@ -77,6 +129,13 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({ isOpen, onClose })
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
             />
           </div>
+
+          {securityError && (
+            <div className="p-3.5 bg-rose-950/40 border border-rose-500/80 rounded-lg text-xs text-rose-200 flex items-start gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">{securityError}</div>
+            </div>
+          )}
 
           <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-[11px] text-slate-400 space-y-1">
             <span className="font-semibold text-slate-300 block">Tables PostgreSQL prévues :</span>

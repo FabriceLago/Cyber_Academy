@@ -155,4 +155,6 @@ export interface UserProgress {
     anonKey: string;
     isConnected: boolean;
   };
+  isIntegrityVerified?: boolean;
+  lastAuditDate?: string;
 }

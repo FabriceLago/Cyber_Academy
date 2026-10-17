@@ -3,7 +3,7 @@ import { Shield, Flame, Award, Database, Terminal, Volume2, VolumeX } from 'luci
 import { useProgress } from '../hooks/useProgress';
 import { AudioService } from '../../core/services/audioService';
 
-export type TabKey = 'dashboard' | 'paths' | 'lessons' | 'labs' | 'quizzes' | 'flashcards' | 'skills';
+export type TabKey = 'dashboard' | 'paths' | 'lessons' | 'labs' | 'quizzes' | 'flashcards' | 'skills' | 'audit';
 
 interface NavbarProps {
   currentTab: TabKey;
@@ -22,7 +22,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onSelectTab, onOpenS
     { key: 'labs', label: 'Cyber Lab' },
     { key: 'quizzes', label: 'Quiz' },
     { key: 'flashcards', label: 'Flashcards' },
-    { key: 'skills', label: 'Compétences' }
+    { key: 'skills', label: 'Compétences' },
+    { key: 'audit', label: 'Audit Sécurité' }
   ];
 
   return (

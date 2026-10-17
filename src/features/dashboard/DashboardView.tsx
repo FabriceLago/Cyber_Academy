@@ -12,7 +12,8 @@ import {
   Target,
   Zap,
   BarChart3,
-  Cpu
+  Cpu,
+  Bug
 } from 'lucide-react';
 import { useProgress } from '../../shared/hooks/useProgress';
 import { INITIAL_LESSONS, LEARNING_PATHS } from '../../core/data/cyberData';
@@ -20,7 +21,7 @@ import { INITIAL_LESSONS, LEARNING_PATHS } from '../../core/data/cyberData';
 interface DashboardViewProps {
   onStartLesson: (lessonId: string) => void;
   onGoToLab: (labType: 'terminal' | 'phishing' | 'network') => void;
-  onGoToTab: (tab: 'paths' | 'lessons' | 'labs' | 'quizzes' | 'skills') => void;
+  onGoToTab: (tab: 'paths' | 'lessons' | 'labs' | 'quizzes' | 'skills' | 'flashcards' | 'audit') => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -178,6 +179,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Voir la cartographie →
           </button>
         </div>
+      </div>
+
+      {/* Hacker Security Audit Spotlight Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-cyan-950/30 to-slate-900 border border-cyan-800/60 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+            <Bug className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-white">Rapport d'Audit Sécurité & Durcissement Hacker</span>
+              <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+                Score 98/100 (A+)
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              6 vulnérabilités critiques et logiques (Prototype Pollution, fuite service_role, falsification LocalStorage, XSS) ont été auditées, exploitées en laboratoire et corrigées avec succès.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onGoToTab('audit')}
+          className="px-4 py-2 rounded-lg text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2 transition-colors whitespace-nowrap shrink-0 shadow-xs"
+        >
+          <span>Consulter l'Audit & Pentest</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Split Section: Next Lesson Card & Skills Matrix */}

@@ -14,6 +14,7 @@ import { StorageService } from '../../core/services/storageService';
 export const SkillsView: React.FC = () => {
   const progress = useProgress();
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
+  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
 
   const handleExportJSON = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(StorageService.exportPortfolioJSON());
@@ -84,11 +85,7 @@ export const SkillsView: React.FC = () => {
           </button>
 
           <button
-            onClick={() => {
-              if (window.confirm('Voulez-vous vraiment réinitialiser votre progression ?')) {
-                StorageService.resetProgress();
-              }
-            }}
+            onClick={() => setShowResetConfirm(true)}
             className="p-2 rounded-lg text-xs font-medium bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
             title="Réinitialiser l'apprentissage"
           >
@@ -96,6 +93,40 @@ export const SkillsView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* In-app Reset Confirmation Dialog */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-rose-800/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-slate-100">
+            <div className="w-12 h-12 rounded-xl bg-rose-950/80 border border-rose-700 flex items-center justify-center text-rose-400 mb-4 mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-white text-center mb-2">
+              Confirmer la réinitialisation complète ?
+            </h3>
+            <p className="text-xs text-slate-400 text-center leading-relaxed mb-6">
+              Cette action remettra à zéro vos points d'XP, leçons validées, scores de quiz et badges. Cette opération est irréversible.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  StorageService.resetProgress();
+                  setShowResetConfirm(false);
+                }}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+              >
+                Oui, tout réinitialiser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Skills Detail Matrix */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5">

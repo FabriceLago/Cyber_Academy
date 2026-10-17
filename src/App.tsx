@@ -11,6 +11,7 @@ import { CyberLabView } from './features/labs/CyberLabView';
 import { QuizzesView } from './features/quizzes/QuizzesView';
 import { FlashcardsView } from './features/flashcards/FlashcardsView';
 import { SkillsView } from './features/skills/SkillsView';
+import { HackerAuditView } from './features/security/HackerAuditView';
 import { INITIAL_LESSONS } from './core/data/cyberData';
 
 export default function App() {
@@ -98,6 +99,8 @@ export default function App() {
         {currentTab === 'flashcards' && <FlashcardsView />}
 
         {currentTab === 'skills' && <SkillsView />}
+
+        {currentTab === 'audit' && <HackerAuditView />}
       </main>
 
       {/* Footer */}
