@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Terminal, Mail, Cpu, Activity } from 'lucide-react';
+import { Terminal, Mail, Cpu, Activity, Globe } from 'lucide-react';
 import { TerminalLab } from './TerminalLab';
 import { PhishingLab } from './PhishingLab';
 import { NetworkPacketAnimation } from '../simulations/NetworkPacketAnimation';
 import { SiemLab } from './SiemLab';
+import { OwaspLab } from './OwaspLab';
 
 export const CyberLabView: React.FC = () => {
-  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem'>('terminal');
+  const [activeLabTab, setActiveLabTab] = useState<'terminal' | 'phishing' | 'network' | 'siem' | 'owasp'>('terminal');
 
   return (
     <div className="space-y-6">
@@ -20,7 +21,7 @@ export const CyberLabView: React.FC = () => {
         </div>
 
         {/* Lab selector segmented tabs */}
-        <div className="flex items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-lg shrink-0">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-lg shrink-0">
           <button
             onClick={() => setActiveLabTab('terminal')}
             className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
@@ -68,6 +69,18 @@ export const CyberLabView: React.FC = () => {
             <Activity className="w-3.5 h-3.5" />
             <span>Console SIEM SOC</span>
           </button>
+
+          <button
+            onClick={() => setActiveLabTab('owasp')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              activeLabTab === 'owasp'
+                ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Bac à Sable OWASP (Web)</span>
+          </button>
         </div>
       </div>
 
@@ -76,6 +89,7 @@ export const CyberLabView: React.FC = () => {
       {activeLabTab === 'phishing' && <PhishingLab />}
       {activeLabTab === 'network' && <NetworkPacketAnimation />}
       {activeLabTab === 'siem' && <SiemLab />}
+      {activeLabTab === 'owasp' && <OwaspLab />}
     </div>
   );
 };

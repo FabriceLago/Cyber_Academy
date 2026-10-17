@@ -125,6 +125,14 @@ export const LearningPathsView: React.FC<LearningPathsViewProps> = ({
                       <span>Accéder au Lab SIEM</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
+                  ) : path.id === 'path-6' ? (
+                    <button
+                      onClick={() => onGoToLab('owasp' as any)}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center gap-2 transition-colors whitespace-nowrap"
+                    >
+                      <span>Accéder au Bac à Sable OWASP</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   ) : (
                     <span className="text-xs text-slate-500 font-mono flex items-center gap-1">
                       <Lock className="w-3.5 h-3.5" />
