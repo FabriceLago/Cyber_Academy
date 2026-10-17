@@ -9,6 +9,7 @@ import { LessonsCatalogView } from './features/lessons/LessonsCatalogView';
 import { LessonReaderView } from './features/lessons/LessonReaderView';
 import { CyberLabView } from './features/labs/CyberLabView';
 import { QuizzesView } from './features/quizzes/QuizzesView';
+import { FlashcardsView } from './features/flashcards/FlashcardsView';
 import { SkillsView } from './features/skills/SkillsView';
 import { INITIAL_LESSONS } from './core/data/cyberData';
 
@@ -93,6 +94,8 @@ export default function App() {
         {currentTab === 'labs' && <CyberLabView />}
 
         {currentTab === 'quizzes' && <QuizzesView />}
+
+        {currentTab === 'flashcards' && <FlashcardsView />}
 
         {currentTab === 'skills' && <SkillsView />}
       </main>

@@ -33,6 +33,9 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab }) => {
           <button onClick={() => onSelectTab('labs')} className="hover:text-white transition-colors">
             Cyber Lab
           </button>
+          <button onClick={() => onSelectTab('flashcards')} className="hover:text-white transition-colors">
+            Flashcards
+          </button>
           <button onClick={() => onSelectTab('skills')} className="hover:text-white transition-colors">
             Portfolio
           </button>
