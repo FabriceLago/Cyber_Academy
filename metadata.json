@@ -1,0 +1,6 @@
+{
+  "name": "Cyber Academy",
+  "description": "Plateforme interactive de formation en cybersécurité pour débutants et futurs professionnels",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
